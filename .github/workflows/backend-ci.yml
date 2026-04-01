@@ -23,4 +23,6 @@ jobs:
 
       - name: Build backend
         working-directory: backend
-        run: ./mvnw -DskipTests clean compile
+        run: |
+          chmod +x ./mvnw
+          ./mvnw -DskipTests clean compile
