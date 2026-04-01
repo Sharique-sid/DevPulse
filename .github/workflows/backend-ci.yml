@@ -22,5 +22,5 @@ jobs:
           cache: maven
 
       - name: Build backend
-        working-directory: devpulse/devpulse
+        working-directory: backend
         run: ./mvnw -DskipTests clean compile
