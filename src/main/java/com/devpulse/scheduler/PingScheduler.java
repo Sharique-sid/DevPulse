@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -53,7 +54,7 @@ public class PingScheduler {
         for (Endpoint endpoint : activeEndpoints) {
             try {
                 pingEndpoint(endpoint);
-            } catch (Exception ex) {
+            } catch (RuntimeException ex) {
                 logger.error("Error pinging endpoint {}: {}", endpoint.getId(), ex.getMessage());
             }
         }
@@ -86,13 +87,23 @@ public class PingScheduler {
             pingLogRepository.save(pingLog);
             resolveAlertIfExists(endpoint.getId());
 
-        } catch (Exception ex) {
+        } catch (RestClientException ex) {
             long responseTime = System.currentTimeMillis() - startTime;
             pingLog.setStatus("DOWN");
             pingLog.setResponseTimeMs(responseTime);
             pingLog.setStatusCode(0);
 
             logger.warn("Endpoint {} is DOWN: {}", endpoint.getId(), ex.getMessage());
+
+            pingLogRepository.save(pingLog);
+            createAlertIfNeeded(endpoint, ex.getMessage());
+        } catch (RuntimeException ex) {
+            long responseTime = System.currentTimeMillis() - startTime;
+            pingLog.setStatus("DOWN");
+            pingLog.setResponseTimeMs(responseTime);
+            pingLog.setStatusCode(0);
+
+            logger.warn("Endpoint {} failed with runtime error: {}", endpoint.getId(), ex.getMessage());
 
             pingLogRepository.save(pingLog);
             createAlertIfNeeded(endpoint, ex.getMessage());
