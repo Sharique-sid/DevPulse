@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -105,16 +106,33 @@ public class AiInsightService {
                 .map(e -> "- " + e.getName() + " (" + e.getMethod() + " " + e.getUrl() + ")")
                 .collect(Collectors.joining("\n"));
 
-        return "You are an API reliability assistant. Generate a short weekly health summary (4-6 lines) for an engineering team.\n"
-                + "Keep it actionable and include one improvement suggestion.\n\n"
-                + "Org ID: " + orgId + "\n"
-                + "Total endpoints: " + endpoints.size() + "\n"
-                + "Total checks (7d): " + totalChecks + "\n"
-                + "Successful checks: " + upChecks + "\n"
-                + "Failed checks: " + downChecks + "\n"
-                + "Uptime %: " + String.format("%.2f", uptime) + "\n"
-                + "Average response time (ms): " + String.format("%.2f", avgResponse) + "\n\n"
-                + "Endpoints:\n" + (endpointsList.isBlank() ? "- No endpoints configured" : endpointsList);
+        String promptTemplate = """
+            You are an API reliability assistant. Generate a short weekly health summary (4-6 lines) for an engineering team.
+            Keep it actionable and include one improvement suggestion.
+
+            Org ID: %d
+            Total endpoints: %d
+            Total checks (7d): %d
+            Successful checks: %d
+            Failed checks: %d
+            Uptime %%: %.2f
+            Average response time (ms): %.2f
+
+            Endpoints:
+            %s
+            """;
+
+        return String.format(
+            promptTemplate,
+            orgId,
+            endpoints.size(),
+            totalChecks,
+            upChecks,
+            downChecks,
+            uptime,
+            avgResponse,
+            endpointsList.isBlank() ? "- No endpoints configured" : endpointsList
+        );
     }
 
     private String generateWithGemini(String prompt) {
@@ -130,11 +148,12 @@ public class AiInsightService {
         Map<String, Object> body = new HashMap<>();
         body.put("contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
 
-        ResponseEntity<Map> response = restTemplate.exchange(
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                 url,
                 HttpMethod.POST,
                 new HttpEntity<>(body, headers),
-                Map.class
+            new ParameterizedTypeReference<>() {
+            }
         );
 
         Object responseBody = response.getBody();
