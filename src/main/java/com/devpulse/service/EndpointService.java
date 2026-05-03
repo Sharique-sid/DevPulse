@@ -33,6 +33,7 @@ public class EndpointService {
         endpoint.setUrl(request.getUrl().trim());
         endpoint.setMethod(request.getMethod().toUpperCase());
         endpoint.setCheckIntervalMinutes(request.getCheckIntervalMinutes());
+        endpoint.setExpectedKeyword(request.getExpectedKeyword() != null ? request.getExpectedKeyword().trim() : null);
         endpoint.setIsActive(true);
 
         Endpoint saved = endpointRepository.save(endpoint);
@@ -80,6 +81,9 @@ public class EndpointService {
         if (request.getCheckIntervalMinutes() != null) {
             endpoint.setCheckIntervalMinutes(request.getCheckIntervalMinutes());
         }
+        if (request.getExpectedKeyword() != null) {
+            endpoint.setExpectedKeyword(request.getExpectedKeyword().isBlank() ? null : request.getExpectedKeyword().trim());
+        }
         if (request.getIsActive() != null) {
             endpoint.setIsActive(request.getIsActive());
         }
@@ -107,6 +111,7 @@ public class EndpointService {
                 endpoint.getMethod(),
                 endpoint.getCheckIntervalMinutes(),
                 endpoint.getIsActive(),
+                endpoint.getExpectedKeyword(),
                 endpoint.getCreatedAt(),
                 endpoint.getUpdatedAt()
         );

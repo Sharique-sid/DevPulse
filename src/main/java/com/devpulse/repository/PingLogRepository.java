@@ -32,4 +32,6 @@ public interface PingLogRepository extends JpaRepository<PingLog, Long> {
 
     @Query("SELECT p FROM PingLog p WHERE p.orgId = :orgId ORDER BY p.checkedAt DESC")
     List<PingLog> findLatestPingsByOrg(@Param("orgId") Long orgId);
+
+    void deleteByCheckedAtBefore(LocalDateTime cutoffDate);
 }

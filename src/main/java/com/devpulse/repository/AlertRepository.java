@@ -22,4 +22,6 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
 
     @Query("SELECT a FROM Alert a WHERE a.endpointId = :endpointId AND a.isResolved = false AND a.lastTriggeredAt > :cooldownTime ORDER BY a.createdAt DESC")
     List<Alert> findRecentUnresolvedAlerts(@Param("endpointId") Long endpointId, @Param("cooldownTime") LocalDateTime cooldownTime, Pageable pageable);
+
+    void deleteByIsResolvedTrueAndCreatedAtBefore(LocalDateTime cutoffDate);
 }

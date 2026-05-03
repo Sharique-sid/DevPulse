@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -35,7 +36,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        if (!jwtUtil.isTokenValid(token) || SecurityContextHolder.getContext().getAuthentication() != null) {
+        if (!jwtUtil.isTokenValid(token)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (SecurityContextHolder.getContext().getAuthentication() != null
+                && !(SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken)) {
             filterChain.doFilter(request, response);
             return;
         }

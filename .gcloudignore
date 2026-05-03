@@ -1,0 +1,18 @@
+# Ignore Maven build output
+target/
+
+# Ignore IDE settings
+.idea/
+*.iml
+.vscode/
+
+# Ignore Node.js modules (if any)
+node_modules/
+
+# Ignore Git
+.git/
+.gitignore
+
+# Ignore local properties
+application-local.properties
+.env

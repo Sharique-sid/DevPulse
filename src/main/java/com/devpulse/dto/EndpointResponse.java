@@ -10,6 +10,7 @@ public class EndpointResponse {
     private String method;
     private Integer checkIntervalMinutes;
     private Boolean isActive;
+    private String expectedKeyword;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -18,6 +19,7 @@ public class EndpointResponse {
 
     public EndpointResponse(Long id, String name, String url, String method,
                            Integer checkIntervalMinutes, Boolean isActive,
+                           String expectedKeyword,
                            LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
@@ -25,6 +27,7 @@ public class EndpointResponse {
         this.method = method;
         this.checkIntervalMinutes = checkIntervalMinutes;
         this.isActive = isActive;
+        this.expectedKeyword = expectedKeyword;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -75,6 +78,14 @@ public class EndpointResponse {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public String getExpectedKeyword() {
+        return expectedKeyword;
+    }
+
+    public void setExpectedKeyword(String expectedKeyword) {
+        this.expectedKeyword = expectedKeyword;
     }
 
     public LocalDateTime getCreatedAt() {

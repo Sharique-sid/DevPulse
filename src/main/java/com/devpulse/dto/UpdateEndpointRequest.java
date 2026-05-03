@@ -20,6 +20,9 @@ public class UpdateEndpointRequest {
 
     private Boolean isActive;
 
+    @Size(max = 100, message = "Expected keyword must be at most 100 characters")
+    private String expectedKeyword;
+
     public String getName() {
         return name;
     }
@@ -58,5 +61,13 @@ public class UpdateEndpointRequest {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public String getExpectedKeyword() {
+        return expectedKeyword;
+    }
+
+    public void setExpectedKeyword(String expectedKeyword) {
+        this.expectedKeyword = expectedKeyword;
     }
 }

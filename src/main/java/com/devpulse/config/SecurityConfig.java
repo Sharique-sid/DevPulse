@@ -33,7 +33,7 @@ public class SecurityConfig {
             .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/health", "/auth/register", "/auth/login").permitAll()
+                    .requestMatchers("/health", "/auth/register", "/auth/login", "/ws-endpoint/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

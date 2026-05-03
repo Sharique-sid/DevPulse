@@ -14,6 +14,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.RestClientException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,15 +31,18 @@ public class PingScheduler {
     private final PingLogRepository pingLogRepository;
     private final AlertRepository alertRepository;
     private final RestTemplate restTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public PingScheduler(EndpointRepository endpointRepository,
                          PingLogRepository pingLogRepository,
                          AlertRepository alertRepository,
-                         RestTemplate restTemplate) {
+                         RestTemplate restTemplate,
+                         SimpMessagingTemplate messagingTemplate) {
         this.endpointRepository = endpointRepository;
         this.pingLogRepository = pingLogRepository;
         this.alertRepository = alertRepository;
         this.restTemplate = restTemplate;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @Scheduled(fixedRate = 60000)
@@ -69,12 +75,14 @@ public class PingScheduler {
         pingLog.setOrgId(endpoint.getOrgId());
 
         try {
-            switch (endpoint.getMethod().toUpperCase()) {
-                case "GET" -> restTemplate.getForEntity(endpoint.getUrl(), String.class);
-                case "POST" -> restTemplate.postForEntity(endpoint.getUrl(), null, String.class);
-                case "PUT" -> restTemplate.put(endpoint.getUrl(), null);
-                case "DELETE" -> restTemplate.delete(endpoint.getUrl());
-                default -> restTemplate.getForEntity(endpoint.getUrl(), String.class);
+            HttpMethod httpMethod = HttpMethod.valueOf(endpoint.getMethod().toUpperCase());
+            ResponseEntity<String> response = restTemplate.exchange(endpoint.getUrl(), httpMethod, null, String.class);
+
+            if (endpoint.getExpectedKeyword() != null && !endpoint.getExpectedKeyword().isBlank()) {
+                String body = response.getBody();
+                if (body == null || !body.contains(endpoint.getExpectedKeyword())) {
+                    throw new RuntimeException("Response did not contain expected keyword: '" + endpoint.getExpectedKeyword() + "'");
+                }
             }
 
             long responseTime = System.currentTimeMillis() - startTime;
@@ -85,6 +93,7 @@ public class PingScheduler {
             logger.debug("Endpoint {} is UP (response time: {}ms)", endpoint.getId(), responseTime);
 
             pingLogRepository.save(pingLog);
+            messagingTemplate.convertAndSend("/topic/org/" + endpoint.getOrgId() + "/pings", pingLog);
             resolveAlertIfExists(endpoint.getId());
 
         } catch (RestClientException ex) {
@@ -96,6 +105,7 @@ public class PingScheduler {
             logger.warn("Endpoint {} is DOWN: {}", endpoint.getId(), ex.getMessage());
 
             pingLogRepository.save(pingLog);
+            messagingTemplate.convertAndSend("/topic/org/" + endpoint.getOrgId() + "/pings", pingLog);
             createAlertIfNeeded(endpoint, ex.getMessage());
         } catch (RuntimeException ex) {
             long responseTime = System.currentTimeMillis() - startTime;
@@ -106,6 +116,7 @@ public class PingScheduler {
             logger.warn("Endpoint {} failed with runtime error: {}", endpoint.getId(), ex.getMessage());
 
             pingLogRepository.save(pingLog);
+            messagingTemplate.convertAndSend("/topic/org/" + endpoint.getOrgId() + "/pings", pingLog);
             createAlertIfNeeded(endpoint, ex.getMessage());
         }
     }
@@ -129,6 +140,7 @@ public class PingScheduler {
                             newAlert.setMessage("Endpoint \"" + endpoint.getName() + "\" is down. Error: " + errorMessage);
                             newAlert.setIsResolved(false);
                             alertRepository.save(newAlert);
+                            messagingTemplate.convertAndSend("/topic/org/" + endpoint.getOrgId() + "/alerts", newAlert);
                             logger.info("Created new alert for endpoint {}", endpoint.getId());
                         }
                 );
@@ -139,6 +151,7 @@ public class PingScheduler {
                 .ifPresent(alert -> {
                     alert.setIsResolved(true);
                     alertRepository.save(alert);
+                    messagingTemplate.convertAndSend("/topic/org/" + alert.getOrgId() + "/alerts", alert);
                     logger.info("Resolved alert for endpoint {}", endpointId);
                 });
     }

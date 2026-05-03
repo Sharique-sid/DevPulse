@@ -24,6 +24,9 @@ public class CreateEndpointRequest {
     @Min(value = 1, message = "Check interval must be at least 1 minute")
     private Integer checkIntervalMinutes;
 
+    @Size(max = 100, message = "Expected keyword must be at most 100 characters")
+    private String expectedKeyword;
+
     public String getName() {
         return name;
     }
@@ -54,5 +57,13 @@ public class CreateEndpointRequest {
 
     public void setCheckIntervalMinutes(Integer checkIntervalMinutes) {
         this.checkIntervalMinutes = checkIntervalMinutes;
+    }
+
+    public String getExpectedKeyword() {
+        return expectedKeyword;
+    }
+
+    public void setExpectedKeyword(String expectedKeyword) {
+        this.expectedKeyword = expectedKeyword;
     }
 }

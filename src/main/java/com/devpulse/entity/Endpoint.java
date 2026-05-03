@@ -37,6 +37,9 @@ public class Endpoint {
     @Column(nullable = false, name = "is_active")
     private Boolean isActive;
 
+    @Column(name = "expected_keyword", length = 100)
+    private String expectedKeyword;
+
     @Column(nullable = false, name = "created_at")
     private LocalDateTime createdAt;
 
@@ -116,6 +119,14 @@ public class Endpoint {
 
     public void setIsActive(Boolean isActive) {
         this.isActive = isActive;
+    }
+
+    public String getExpectedKeyword() {
+        return expectedKeyword;
+    }
+
+    public void setExpectedKeyword(String expectedKeyword) {
+        this.expectedKeyword = expectedKeyword;
     }
 
     public LocalDateTime getCreatedAt() {
