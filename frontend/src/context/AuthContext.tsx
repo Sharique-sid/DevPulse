@@ -22,8 +22,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(data.token);
   };
 
+
   const register = async (payload: RegisterRequest) => {
-    const { data } = await api.post<AuthResponse>("/auth/register", payload);
+    const { data } = await api.post<AuthResponse>("/auth/register", {
+      name: payload.organisationName,
+      email: payload.email,
+      password: payload.password,
+    });
     localStorage.setItem("devpulse_token", data.token);
     setToken(data.token);
   };

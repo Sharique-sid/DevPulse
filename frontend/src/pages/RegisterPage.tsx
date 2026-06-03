@@ -62,7 +62,11 @@ export function RegisterPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
+              minLength={8}
             />
+            <span style={{ fontSize: "0.75rem", color: "var(--muted, #888)", marginTop: "2px", display: "block" }}>
+              Minimum 8 characters
+            </span>
           </label>
           {error ? <div className="error-text">{error}</div> : null}
           <button type="submit">Create Account</button>
