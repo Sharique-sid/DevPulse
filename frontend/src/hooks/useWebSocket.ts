@@ -23,7 +23,7 @@ export function useWebSocket<T>(topicSuffix: string, onMessage: (data: T) => voi
     const orgId = getOrgIdFromToken(token);
     if (!orgId) return;
 
-    const apiBase = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8082";
+    const apiBase = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8082").replace(/\/$/, "");
     const wsUrl = apiBase.replace(/^http/, "ws") + "/ws-endpoint";
     const topic = `/topic/org/${orgId}/${topicSuffix}`;
 

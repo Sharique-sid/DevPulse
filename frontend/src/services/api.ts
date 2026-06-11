@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8082";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8082").replace(/\/$/, "");
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.url?.endsWith("/auth/login")) {
       localStorage.removeItem("devpulse_token");
       window.location.href = "/";
     }
