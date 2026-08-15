@@ -4,7 +4,9 @@ import com.devpulse.dto.CreateEndpointRequest;
 import com.devpulse.dto.EndpointResponse;
 import com.devpulse.dto.UpdateEndpointRequest;
 import com.devpulse.entity.Endpoint;
+import com.devpulse.repository.AlertRepository;
 import com.devpulse.repository.EndpointRepository;
+import com.devpulse.repository.PingLogRepository;
 import com.devpulse.security.SecurityUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,18 +16,28 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.devpulse.util.UrlValidatorUtil;
+
 @Service
 public class EndpointService {
 
     private final EndpointRepository endpointRepository;
+    private final PingLogRepository pingLogRepository;
+    private final AlertRepository alertRepository;
 
-    public EndpointService(EndpointRepository endpointRepository) {
+    public EndpointService(EndpointRepository endpointRepository, 
+                           PingLogRepository pingLogRepository, 
+                           AlertRepository alertRepository) {
         this.endpointRepository = endpointRepository;
+        this.pingLogRepository = pingLogRepository;
+        this.alertRepository = alertRepository;
     }
 
     @Transactional
     public EndpointResponse createEndpoint(CreateEndpointRequest request) {
         Long orgId = SecurityUtils.getCurrentOrgId();
+        
+        UrlValidatorUtil.validateUrl(request.getUrl());
 
         Endpoint endpoint = new Endpoint();
         endpoint.setOrgId(orgId);
@@ -73,6 +85,7 @@ public class EndpointService {
             endpoint.setName(request.getName().trim());
         }
         if (request.getUrl() != null && !request.getUrl().isBlank()) {
+            UrlValidatorUtil.validateUrl(request.getUrl());
             endpoint.setUrl(request.getUrl().trim());
         }
         if (request.getMethod() != null && !request.getMethod().isBlank()) {
@@ -100,6 +113,8 @@ public class EndpointService {
                         HttpStatus.NOT_FOUND,
                         "Endpoint not found"
                 ));
+        pingLogRepository.deleteByEndpointId(id);
+        alertRepository.deleteByEndpointId(id);
         endpointRepository.delete(endpoint);
     }
 

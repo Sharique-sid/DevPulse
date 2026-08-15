@@ -73,6 +73,32 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     } else {
                         logger.warn("Missing or invalid Authorization header in WebSocket connect");
                     }
+                } else if (accessor != null && StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+                    String destination = accessor.getDestination();
+                    if (destination != null && destination.startsWith("/topic/org/")) {
+                        try {
+                            String[] parts = destination.split("/");
+                            if (parts.length >= 4) {
+                                Long requestedOrgId = Long.parseLong(parts[3]);
+                                if (accessor.getUser() instanceof UsernamePasswordAuthenticationToken) {
+                                    UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) accessor.getUser();
+                                    if (auth.getPrincipal() instanceof UserPrincipal) {
+                                        UserPrincipal userPrincipal = (UserPrincipal) auth.getPrincipal();
+                                        if (!requestedOrgId.equals(userPrincipal.getOrgId())) {
+                                            logger.error("User {} attempted to subscribe to unauthorized orgId: {}", userPrincipal.getEmail(), requestedOrgId);
+                                            throw new IllegalArgumentException("Unauthorized subscription");
+                                        }
+                                    }
+                                } else {
+                                    logger.warn("Unauthenticated attempt to subscribe to protected topic");
+                                    throw new IllegalArgumentException("Unauthorized subscription");
+                                }
+                            }
+                        } catch (NumberFormatException e) {
+                            logger.error("Invalid orgId format in destination: {}", destination);
+                            throw new IllegalArgumentException("Invalid subscription destination");
+                        }
+                    }
                 }
                 return message;
             }

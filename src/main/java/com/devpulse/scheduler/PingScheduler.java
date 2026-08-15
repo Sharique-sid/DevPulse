@@ -14,10 +14,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.RestClientException;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import java.time.Duration;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,17 +36,23 @@ public class PingScheduler {
     private final AlertRepository alertRepository;
     private final RestTemplate restTemplate;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ExecutorService pingExecutor;
 
     public PingScheduler(EndpointRepository endpointRepository,
                          PingLogRepository pingLogRepository,
                          AlertRepository alertRepository,
-                         RestTemplate restTemplate,
                          SimpMessagingTemplate messagingTemplate) {
         this.endpointRepository = endpointRepository;
         this.pingLogRepository = pingLogRepository;
         this.alertRepository = alertRepository;
-        this.restTemplate = restTemplate;
+        
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(10000);
+        this.restTemplate = new RestTemplate(factory);
+        
         this.messagingTemplate = messagingTemplate;
+        this.pingExecutor = Executors.newVirtualThreadPerTaskExecutor();
     }
 
     @Scheduled(fixedRate = 60000)
@@ -58,14 +68,16 @@ public class PingScheduler {
         logger.info("Found {} active endpoints to ping", activeEndpoints.size());
 
         for (Endpoint endpoint : activeEndpoints) {
-            try {
-                pingEndpoint(endpoint);
-            } catch (RuntimeException ex) {
-                logger.error("Error pinging endpoint {}: {}", endpoint.getId(), ex.getMessage());
-            }
+            pingExecutor.submit(() -> {
+                try {
+                    pingEndpoint(endpoint);
+                } catch (RuntimeException ex) {
+                    logger.error("Error pinging endpoint {}: {}", endpoint.getId(), ex.getMessage());
+                }
+            });
         }
 
-        logger.info("Ping job completed");
+        logger.info("Ping jobs submitted to virtual threads");
     }
 
     private void pingEndpoint(Endpoint endpoint) {
@@ -122,11 +134,7 @@ public class PingScheduler {
     }
 
     private void createAlertIfNeeded(Endpoint endpoint, String errorMessage) {
-        LocalDateTime cooldownThreshold = LocalDateTime.now().minusMinutes(ALERT_COOLDOWN_MINUTES);
-
-        alertRepository.findRecentUnresolvedAlerts(endpoint.getId(), cooldownThreshold, PageRequest.of(0, 1))
-                .stream()
-                .findFirst()
+        alertRepository.findByEndpointIdAndIsResolvedFalseOrderByCreatedAtDesc(endpoint.getId())
                 .ifPresentOrElse(
                         existingAlert -> {
                             existingAlert.setLastTriggeredAt(LocalDateTime.now());

@@ -37,13 +37,23 @@ public class DataPruningScheduler {
 
         // Prune Ping Logs older than 7 days
         LocalDateTime pingLogCutoff = LocalDateTime.now().minusDays(PING_LOGS_RETENTION_DAYS);
-        pingLogRepository.deleteByCheckedAtBefore(pingLogCutoff);
-        logger.info("Pruned ping logs older than {}", pingLogCutoff);
+        int deletedPingLogs;
+        int totalPingLogs = 0;
+        do {
+            deletedPingLogs = pingLogRepository.deleteOldPingLogsInBatches(pingLogCutoff);
+            totalPingLogs += deletedPingLogs;
+        } while (deletedPingLogs > 0);
+        logger.info("Pruned {} ping logs older than {}", totalPingLogs, pingLogCutoff);
 
         // Prune Resolved Alerts older than 30 days
         LocalDateTime alertsCutoff = LocalDateTime.now().minusDays(ALERTS_RETENTION_DAYS);
-        alertRepository.deleteByIsResolvedTrueAndCreatedAtBefore(alertsCutoff);
-        logger.info("Pruned resolved alerts older than {}", alertsCutoff);
+        int deletedAlerts;
+        int totalAlerts = 0;
+        do {
+            deletedAlerts = alertRepository.deleteOldResolvedAlertsInBatches(alertsCutoff);
+            totalAlerts += deletedAlerts;
+        } while (deletedAlerts > 0);
+        logger.info("Pruned {} resolved alerts older than {}", totalAlerts, alertsCutoff);
 
         logger.info("Data pruning job completed.");
     }

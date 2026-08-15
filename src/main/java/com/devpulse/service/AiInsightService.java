@@ -59,6 +59,15 @@ public class AiInsightService {
     @Transactional
     public AiInsightResponse generateWeeklyInsight() {
         Long orgId = SecurityUtils.getCurrentOrgId();
+        
+        // Prevent API quota exhaustion / abuse (24-hour cooldown)
+        aiInsightRepository.findTopByOrgIdOrderByGeneratedAtDesc(orgId).ifPresent(latest -> {
+            if (latest.getGeneratedAt().isAfter(LocalDateTime.now().minusHours(24))) {
+                throw new ResponseStatusException(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS, 
+                    "You can only generate one AI insight per 24 hours. Please view the latest insight.");
+            }
+        });
+
         String summaryInput = buildWeeklySummaryInput(orgId);
         String generatedText = generateWithGemini(summaryInput);
 

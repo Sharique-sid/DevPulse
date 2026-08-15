@@ -24,4 +24,10 @@ public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findRecentUnresolvedAlerts(@Param("endpointId") Long endpointId, @Param("cooldownTime") LocalDateTime cooldownTime, Pageable pageable);
 
     void deleteByIsResolvedTrueAndCreatedAtBefore(LocalDateTime cutoffDate);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = "DELETE FROM alerts WHERE is_resolved = true AND created_at < :cutoff LIMIT 1000", nativeQuery = true)
+    int deleteOldResolvedAlertsInBatches(@Param("cutoff") LocalDateTime cutoff);
+
+    void deleteByEndpointId(Long endpointId);
 }

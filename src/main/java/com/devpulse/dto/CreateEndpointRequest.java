@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.URL;
 
 public class CreateEndpointRequest {
 
@@ -14,6 +15,7 @@ public class CreateEndpointRequest {
 
     @NotBlank(message = "URL is required")
     @Size(max = 500, message = "URL must be at most 500 characters")
+    @URL(message = "Must be a valid URL")
     private String url;
 
     @NotBlank(message = "HTTP method is required")

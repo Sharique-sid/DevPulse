@@ -34,4 +34,10 @@ public interface PingLogRepository extends JpaRepository<PingLog, Long> {
     List<PingLog> findLatestPingsByOrg(@Param("orgId") Long orgId);
 
     void deleteByCheckedAtBefore(LocalDateTime cutoffDate);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = "DELETE FROM ping_logs WHERE checked_at < :cutoff LIMIT 5000", nativeQuery = true)
+    int deleteOldPingLogsInBatches(@Param("cutoff") LocalDateTime cutoff);
+
+    void deleteByEndpointId(Long endpointId);
 }

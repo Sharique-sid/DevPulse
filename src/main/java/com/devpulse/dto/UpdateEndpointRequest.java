@@ -3,6 +3,7 @@ package com.devpulse.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.URL;
 
 public class UpdateEndpointRequest {
 
@@ -10,6 +11,7 @@ public class UpdateEndpointRequest {
     private String name;
 
     @Size(max = 500, message = "URL must be at most 500 characters")
+    @URL(message = "Must be a valid URL")
     private String url;
 
     @Pattern(regexp = "GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS", message = "HTTP method must be one of: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS")
